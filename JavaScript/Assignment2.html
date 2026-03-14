@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spatial Weather Query Tool</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="widget-container">
+        <h1>Weather Query</h1>
+        
+        <div>
+            <input type="text" id="location-input" placeholder="Enter location...">
+            <button id="search-btn">Search</button>
+        </div>
+
+        <div id="loading" class="loader"></div>
+        
+        <div id="error-message" class="error">Location not found. Please try again.</div>
+
+        <div id="weather-result" class="weather-display">
+            <h2 id="display-location">City, Country</h2>
+            <div class="coords" id="display-coords">Lat: 0, Lon: 0</div>
+            <div class="temp" id="display-temp">--°C</div>
+            <div id="display-condition" style="font-size: 1.2rem; margin-bottom: 5px;">Condition</div>
+            <div id="display-wind" style="color: #555;">Wind: -- m/s</div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = '524f0224d80912f3daa5c60e3953e8ab'; 
+
+        const searchBtn = document.getElementById('search-btn');
+        const locationInput = document.getElementById('location-input');
+        const weatherResult = document.getElementById('weather-result');
+        const loadingIndicator = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+
+        async function getWeatherData(location) {
+            try {
+                const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${API_KEY}`;
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error('Location query failed');
+                }
+                return await response.json(); 
+
+            } catch (error) {
+                console.error("API Error:", error);
+                return null; 
+            }
+        }
+
+        function processWeatherData(rawData) {
+            return {
+                city: rawData.name,
+                country: rawData.sys.country,
+                tempCelsius: Math.round(rawData.main.temp - 273.15),
+                condition: rawData.weather[0].main,
+                windSpeed: rawData.wind.speed,
+                latitude: rawData.coord.lat,
+                longitude: rawData.coord.lon
+            };
+        }
+
+        function displayData(data) {
+            document.getElementById('display-location').textContent = `${data.city}, ${data.country}`;
+            document.getElementById('display-coords').textContent = `Lat: ${data.latitude}, Lon: ${data.longitude}`;
+            document.getElementById('display-temp').textContent = `${data.tempCelsius}°C`;
+            document.getElementById('display-condition').textContent = data.condition;
+            document.getElementById('display-wind').textContent = `Wind: ${data.windSpeed} m/s`;
+            
+            weatherResult.style.display = 'block';
+        }
+
+        searchBtn.addEventListener('click', async () => {
+            const locationValue = locationInput.value;
+            
+            if (!locationValue) return;
+
+            weatherResult.style.display = 'none';
+            errorMessage.style.display = 'none';
+            loadingIndicator.style.display = 'block'; 
+
+            const rawData = await getWeatherData(locationValue);
+            
+            loadingIndicator.style.display = 'none';
+
+            if (rawData) {
+                const cleanAttributes = processWeatherData(rawData);
+                
+                console.log("Here is the weather data object:", cleanAttributes);
+                
+                displayData(cleanAttributes);
+            } else {
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
